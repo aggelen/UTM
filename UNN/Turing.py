@@ -14,6 +14,7 @@ def read_file(path):
     reading = Path(path).read_text()
     return reading
 
+#%%
 class TuringMachine:
     def __init__(self, states, alphabet, tape_alphabet, start_state, accept_states, blank_symbol='_', verbose=False):
         self.states = list(states)
@@ -105,3 +106,15 @@ class TuringMachine:
         
         else:
             raise Exception("The Turing machine cannot create state transitions. You had to load a program. Please use .load_program() method.")
+            
+            
+#%% Minsky's Small Universal Turing Machine 4 symbols, 7 states
+class Minsky47UniversalTuringMachine(TuringMachine):
+    def __init__(self):
+        
+        super().__init__(states=['Q0', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6'],
+                         alphabet=['0', '1', '2', '3'], 
+                         tape_alphabet=['0', '1', '2', '3'], 
+                         start_state='Q0', 
+                         accept_states='Q0', 
+                         blank_symbol='0')
