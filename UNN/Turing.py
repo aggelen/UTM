@@ -121,5 +121,7 @@ class Minsky47UniversalTuringMachine(TuringMachine):
                          accept_states='Q0', 
                          blank_symbol='0')
         
-    def load_program(self, program_path):
-        pass
+        self.load_program('TMs/Minsky4Sym7St.txt')
+    
+    
+    
