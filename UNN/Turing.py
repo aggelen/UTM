@@ -18,7 +18,9 @@ def read_file(path):
 class TuringMachine:
     def __init__(self, states, alphabet, tape_alphabet, start_state, accept_states, blank_symbol='_', verbose=False):
         self.states = list(states)
-        self.alphabet = list(alphabet) + [blank_symbol]
+        self.alphabet = list(alphabet)
+        if blank_symbol not in self.alphabet:
+            self.alphabet = self.alphabet + [blank_symbol]
         self.tape_alphabet = tape_alphabet
         self.blank_symbol = blank_symbol
         self.start_state = start_state
@@ -118,3 +120,6 @@ class Minsky47UniversalTuringMachine(TuringMachine):
                          start_state='Q0', 
                          accept_states='Q0', 
                          blank_symbol='0')
+        
+    def load_program(self, program_path):
+        pass

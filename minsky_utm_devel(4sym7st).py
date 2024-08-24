@@ -22,3 +22,6 @@ from UNN.Turing import Minsky47UniversalTuringMachine
 
 utm = Minsky47UniversalTuringMachine()
 
+utm.load_program('Programs/binary_addition.txt')
+
+utm.run("110010110")
