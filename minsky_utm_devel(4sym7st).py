@@ -22,4 +22,5 @@ from UNN.Turing import Minsky47UniversalTuringMachine
 
 utm = Minsky47UniversalTuringMachine()
 
-# utm.run("110010110")
+utm.encode('Programs/toggle_bits.txt')
+utm.run("110010110")

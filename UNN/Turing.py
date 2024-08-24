@@ -124,4 +124,10 @@ class Minsky47UniversalTuringMachine(TuringMachine):
         self.load_program('TMs/Minsky4Sym7St.txt')
     
     
+    def encode(self, tm_path):
+        pass
+    
+    def run(self, input_string):
+        pass
+    
     
