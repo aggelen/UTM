@@ -114,12 +114,15 @@ class TuringMachine:
 class Minsky47UniversalTuringMachine(TuringMachine):
     def __init__(self):
         
-        super().__init__(states=['Q0', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6'],
+        super().__init__(states=['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6', 'Q7'],
                          alphabet=['0', '1', '2', '3'], 
-                         tape_alphabet=['0', '1', '2', '3'], 
-                         start_state='Q0', 
-                         accept_states='Q0', 
+                         tape_alphabet=['0', '1', 'b', 'c'], 
+                         start_state='Q1', 
+                         accept_states='Q1', 
                          blank_symbol='0')
+        
+        N1 = 1
+        # Nk+1 = Nk + mk + 1 
         
         self.load_program('TMs/Minsky4Sym7St.txt')
     

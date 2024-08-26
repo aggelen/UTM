@@ -71,10 +71,12 @@ class PostCanonicalSystem(System):
 class BiTagSystem(System):
     def __init__(self, alphabet, production, verbose=False):
         super().__init__(alphabet, production, verbose)
+        self.alphabet += ['*', '_']
         self.parse_production()
         
+        
     def parse_string(self, input_string):
-        pattern = '|'.join(re.escape(tag) for tag in self.alphabet+['*'])
+        pattern = '|'.join(re.escape(tag) for tag in self.alphabet)
         matches = re.findall(pattern, input_string)
         
         if '->' in input_string:
@@ -95,19 +97,29 @@ class BiTagSystem(System):
                 self.halt_prod_symbol = m[0][0]
             
     def apply_2_tag(self, parsed_input):
-        prod_id = self.alphabet.index(parsed_input[0])
+        # prod_id = self.alphabet.index(parsed_input[0])
+        for i, c in enumerate(self.parsed_production):
+            if c[0][0] == parsed_input[0]:
+                current_prod = c
+                continue
+        
+   
+        halt = False
+        
         # remove first two
         parsed_input.pop(0)
         parsed_input.pop(0)
         # apply production by prod_id
-        tobe_append = [i for i in self.parsed_production[prod_id][1]]
+        tobe_append = [i for i in current_prod[1]]
+        if "_" in tobe_append:
+            tobe_append.remove("_")
         parsed_input += tobe_append
+       
         op = parsed_input
         
-        if parsed_input[0] == self.halt_prod_symbol:
+        if op[0] == self.halt_prod_symbol or len(op) < 2:
             halt = True
-        else:
-            halt = False
+        
         return halt, op
         
         
