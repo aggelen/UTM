@@ -22,9 +22,9 @@ This implements a modified version.
 # tag word ar as ... az
 
 #%%
-from UNN.Post import BiTagSystem
+from UNN.Post import TwoTagSystem
 
-T1 = BiTagSystem(alphabet=['E', 'O', 'X'], 
+T1 = TwoTagSystem(alphabet=['E', 'O', 'X'], 
                  production=["X -> _",
                              "E -> E",
                              "O -> EO"],         # * means STOP
@@ -40,5 +40,5 @@ from UNN.Turing import Minsky47UniversalTuringMachine
 
 utm = Minsky47UniversalTuringMachine()
 
-# utm.encode('Programs/toggle_bits.txt')
-# utm.run("110010110")
+compiled_machine = TwoTagSystem().from_turing_machine('TMs/toggle_bit_TM.txt')
+# compiled_machine.run()

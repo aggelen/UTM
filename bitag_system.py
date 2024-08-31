@@ -8,9 +8,9 @@ Created on Sat Aug 24 14:00:51 2024
 Example: 2-Tag system simulation
 """
 
-from UNN.Post import BiTagSystem
+from UNN.Post import TwoTagSystem
 
-T1 = BiTagSystem(alphabet=['a1', 'a2', 'a3'], 
+T1 = TwoTagSystem(alphabet=['a1', 'a2', 'a3'], 
                  production=["a1 -> a2a1a3",
                              "a2 -> a1",
                              "a3 -> *"],         # * means STOP

@@ -6,13 +6,21 @@ Created on Sat Aug 24 13:59:34 2024
 @author: gelenag
 """
 import re
+from pathlib import Path
+from UNN.Turing import TuringMachineConfiguration
+
+def read_file(path):
+    reading = Path(path).read_text()
+    return reading
 
 class System:
-    def __init__(self, alphabet, production, verbose=False):
-        self.verbose = verbose
+    def __init__(self, alphabet=None, production=None, verbose=False):
+        self.verbose = verbose            
         self.alphabet = alphabet
         self.production = production
-        self.parse_production()
+        
+        if production is not None:
+            self.parse_production()
         
     def parse_production(self):
         self.production_lhs = []
@@ -68,13 +76,10 @@ class PostCanonicalSystem(System):
         return output
 
 
-class BiTagSystem(System):
-    def __init__(self, alphabet, production, verbose=False):
+class TwoTagSystem(System):
+    def __init__(self, alphabet=None, production=None, verbose=False):
         super().__init__(alphabet, production, verbose)
-        self.alphabet += ['*', '_']
-        self.parse_production()
-        
-        
+               
     def parse_string(self, input_string):
         pattern = '|'.join(re.escape(tag) for tag in self.alphabet)
         matches = re.findall(pattern, input_string)
@@ -135,3 +140,185 @@ class BiTagSystem(System):
             print(printstr)
         
         return ''.join(parsed_input)
+
+
+    def load_turing_machine(self, machine_path):
+        definition = read_file(machine_path)
+        transitions = []
+        lines = definition.splitlines()
+        for ln_id, ln in enumerate(lines):
+            if '#states:' in ln:
+                states = ln.split(" ")[1:]
+            if '#symbols:' in ln:
+                symbols = ln.split(" ")[1:]
+            if '#initial_state:' in ln:
+                initial_state = ln.split(" ")[1] 
+            if "#accept_states:" in ln:
+                accept_states = ln.split(" ")[1:] 
+            if "#initial_tape:" in ln:
+                initial_tape = ln.split(" ")[1] 
+                
+            if '#transition_table' in ln:
+                for i in range(ln_id+1, len(lines)):
+                    transitions.append(lines[i].strip().split(" "))
+                break
+        
+        # tm config : states, alphabet, tape_alphabet, transitions, blank_symbol, start_state, accept_states
+        machine = TuringMachineConfiguration(states, symbols, None, transitions, '_', initial_state, accept_states, initial_tape)
+            
+        return machine
+    
+    @staticmethod
+    def transition_to_production_rules(adapted_transition, tm_stop_states):
+        """Convert a single adapted Turing machine transition into
+        a set of multiple two tag system production rules
+        Arguments:
+            adapted_transition: The transition to be converted (5-tuple, see function convert_tm_to_two_tag_system())
+            tm_stop_states:     The Turing machine's stop states (list)"""
+
+        tm_state, tm_write_symbol, tm_direction, tm_state_change_0, tm_state_change_1 = adapted_transition
+
+        # rename the stop states to the stopping symbol "#"
+        if tm_state_change_0 in tm_stop_states:
+            tm_state_change_0 = "#"
+        if tm_state_change_1 in tm_stop_states:
+            tm_state_change_1 = "#"
+
+        assert tm_write_symbol in ("0", "1")  # make sure the Turing machine is actually binary
+        assert tm_direction in ("L", "R")  # only left and right head movement is supported
+
+        # set up the production rules for right and left head movement according to the Cocke and Minsky paper
+        # refer to the paper in the "literature" directory for details
+        # The strings "$", "!0" and "!1" are placeholders and will be replaced by
+        # the corresponding adapted Turing machine state names.
+        if tm_direction == "R":
+            production_rules = {
+                "A$": ["C$", "x"] if tm_write_symbol == "0" else ["C$", "x", "c$", "x"],
+                "a$": ["c$", "x", "c$", "x"],
+                "B$": ["S$"],
+                "b$": ["s$"],
+                "C$": ["D$_1", "D$_0"],
+                "c$": ["d$_1", "d$_0"],
+                "S$": ["T$_1", "T$_0"],
+                "s$": ["t$_1", "t$_0"],
+                "D$_1": ["A!1", "x"],
+                "d$_1": ["a!1", "x"],
+                "T$_1": ["B!1", "x"],
+                "t$_1": ["b!1", "x"],
+                "D$_0": ["x", "A!0", "x"],
+                "d$_0": ["a!0", "x"],
+                "T$_0": ["B!0", "x"],
+                "t$_0": ["b!0", "x"],
+            }
+        elif tm_direction == "L":
+            production_rules = {
+                # switch A and B (is now called Z)
+                "A$": ["Z$", "x"],
+                "a$": ["z$", "x"],
+                # Z (formerly A) now takes the role of B
+                "Z$": ["S$"],
+                "z$": ["s$"],
+                # B takes the role of (formerly) A
+                "B$": ["C$", "x"] if tm_write_symbol == "0" else ["C$", "x", "c$", "x"],
+                "b$": ["c$", "x", "c$", "x"],
+                "C$": ["D$_1", "D$_0"],
+                "c$": ["d$_1", "d$_0"],
+                "S$": ["T$_1", "T$_0"],
+                "s$": ["t$_1", "t$_0"],
+
+                "D$_1": ["Y$_1", "x"],
+                "d$_1": ["y$_1", "x"],
+                "T$_1": ["A!1", "x"],
+                "t$_1": ["a!1", "x"],
+                "D$_0": ["x", "Y$_0", "x"],
+                "d$_0": ["y$_0", "x"],
+                "T$_0": ["A!0", "x"],
+                "t$_0": ["a!0", "x"],
+
+                "Y$_0": ["B!0", "x"],
+                "y$_0": ["b!0", "x"],
+                "Y$_1": ["B!1", "x"],
+                "y$_1": ["b!1", "x"]
+            }
+        else:
+            assert False
+
+        # iterate over the production rules and make some final adaptations
+        final_production_rules = {}
+        for source_symbol, target_symbols in production_rules.items():
+            source_symbol = source_symbol.replace("$", "_" + str(tm_state))  # replace placeholder by tm state names
+
+            # iterate over the targets (right-hand side) of the production rules and make some final adaptations
+            final_targets = []
+            for target in target_symbols:
+                # set the halting symbol to the target to make the two tag system stop
+                if (target == "A!0" and tm_state_change_0 == "#") or (target == "A!1" and tm_state_change_1 == "#"):
+                    target = "#"
+                else:  # if not stopping, replace placeholders by tm state names
+                    target = target.replace("$", "_" + str(tm_state))
+                    target = target.replace("!0", "_" + str(tm_state_change_0))
+                    target = target.replace("!1", "_" + str(tm_state_change_1))
+                final_targets.append(target)
+            final_production_rules[source_symbol] = final_targets
+
+        return final_production_rules
+    
+    def from_turing_machine(self, machine_path):
+        machine = self.load_turing_machine(machine_path).convert_to_binary()
+    
+        #%% Convert formalism
+        new_transitions = []
+        
+        for k, v in machine.transitions.items():
+            (source_state, read_symbol), (target_state, write_symbol, direction) = k, v
+            new_state = source_state + "_" + read_symbol
+
+            # the tm-like construct will have separate states for having read a 0 or a 1
+            if target_state in machine.accept_states:
+                qi_0 = target_state
+                qi_1 = target_state
+            else:
+                qi_0 = target_state + "_0"
+                qi_1 = target_state + "_1"
+
+            new_transition = (new_state, write_symbol, direction, qi_0, qi_1)
+            new_transitions.append(new_transition)
+            
+        machine.transitions_in_second_formalism = new_transitions
+        
+        # Express the tm tape (which only has 0s and 1s) as two binary numbers, m and n (left and right of the head)
+        tape_m = 0
+        tape_n = 0
+        for i, symbol in enumerate(machine.initial_tape):
+            tape_n += int(symbol) * 2 ** i
+
+        # A special unique start state (uss) needs to be prepended since the Turing machine's original start state
+        # was split into two states and we must begin with a single start state
+        uss = "q_init_0"
+
+        uss_transition = (uss, "0", "R", machine.start_state + "_0", machine.start_state + "_1")
+        new_transitions.append(uss_transition)
+
+        # Convert the start tape's two binary numbers into a two tag system's start word of the form
+        # [A x a x a x... a x B x b x b x...b x] where each a x and b x occurs m and n times, respectively.
+        # The upper case A x and B x only occur once and act as separators between the left and right hand side
+        # Each adapted state 's' will receive their own A and B variants, named a_'s' and b_'s'.
+        # In this instance, 's' is the unique start state uss. The remaining a_'s' and b_'s' will be defined later.
+        start_word = ["A_" + uss, "x"] + ["a_" + uss, "x"] * tape_m + ["B_" + uss, "x"] + ["b_" + uss, "x"] * tape_n
+
+        production_rules = {}
+
+        # convert the tm's adapted transitions to two tag system production rules
+        for adapted_transition in new_transitions:
+            prod_rules = self.transition_to_production_rules(adapted_transition, machine.accept_states)
+
+            # add the production rules for a single transition to the dictionary of all production rules
+            for key, value in prod_rules.items():
+                assert key not in production_rules
+                production_rules[key] = value
+
+        self.production_rules = production_rules
+        self.current_word = start_word
+        self.halting_symbol = "#"
+        self.steps = 0
+        return self
