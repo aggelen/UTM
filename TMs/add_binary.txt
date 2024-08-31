@@ -1,0 +1,12 @@
+#states: q0 q1 q2 qend
+#symbols: 0 1 x
+#initial_state: q0
+#accept_states: qend
+#initial_tape: 1101_101
+
+#transition_table:
+q0 1 q0 1 R	
+q0 x q1 x R	
+q1 _ qend _ L
+q1 1 q2 x L
+q2 x q0 1 R

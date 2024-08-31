@@ -23,22 +23,9 @@ This implements a modified version.
 
 #%%
 from UNN.Post import TwoTagSystem
-
-T1 = TwoTagSystem(alphabet=['E', 'O', 'X'], 
-                 production=["X -> _",
-                             "E -> E",
-                             "O -> EO"],         # * means STOP
-                 verbose=True)       
-
-initial_word = "OOXXX"
-print("i/p: {}".format(initial_word))
-print("o/p: " + T1.forward(initial_word))
-
-
-#%%
 from UNN.Turing import Minsky47UniversalTuringMachine
 
 utm = Minsky47UniversalTuringMachine()
 
 compiled_machine = TwoTagSystem().from_turing_machine('TMs/toggle_bit_TM.txt')
-# compiled_machine.run()
+compiled_machine.run()

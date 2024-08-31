@@ -79,7 +79,8 @@ class PostCanonicalSystem(System):
 class TwoTagSystem(System):
     def __init__(self, alphabet=None, production=None, verbose=False):
         super().__init__(alphabet, production, verbose)
-               
+        self.steps = 0
+        
     def parse_string(self, input_string):
         pattern = '|'.join(re.escape(tag) for tag in self.alphabet)
         matches = re.findall(pattern, input_string)
@@ -164,9 +165,9 @@ class TwoTagSystem(System):
                 break
         
         # tm config : states, alphabet, tape_alphabet, transitions, blank_symbol, start_state, accept_states
-        machine = TuringMachineConfiguration(states, symbols, None, transitions, '_', initial_state, accept_states, initial_tape)
+        self.machine = TuringMachineConfiguration(states, symbols, None, transitions, '_', initial_state, accept_states, initial_tape)
             
-        return machine
+        return self.machine
     
     @staticmethod
     def transition_to_production_rules(adapted_transition, tm_stop_states):
@@ -289,7 +290,7 @@ class TwoTagSystem(System):
         # Express the tm tape (which only has 0s and 1s) as two binary numbers, m and n (left and right of the head)
         tape_m = 0
         tape_n = 0
-        for i, symbol in enumerate(machine.initial_tape):
+        for i, symbol in enumerate(machine.tape):
             tape_n += int(symbol) * 2 ** i
 
         # A special unique start state (uss) needs to be prepended since the Turing machine's original start state
@@ -321,4 +322,76 @@ class TwoTagSystem(System):
         self.current_word = start_word
         self.halting_symbol = "#"
         self.steps = 0
+        
+        self.get_word_as_tm_tape()
+        
         return self
+    
+    def get_word_as_tm_tape(self):
+        """Return the two tag system's current word in the form of the original binary TM's tape"""
+
+        assert self.current_word[0] == "#" or self.current_word[0].startswith("A")
+        assert self.current_word[1] == "x"
+
+        # the word should now look like this:
+        # - a single "A x"
+        # - one or more "a x"
+        # - a single "B x"
+        # - one or more "b x"
+        # A x and B x act as separators
+
+        word = self.current_word[2:]  # cut off the initial "A x"
+        m = 0
+        n = 0
+
+        # count all "a x" until "B x" is reached
+        while not word[0].startswith("B"):
+            assert word[0].startswith("a") and word[1] == "x"
+            m += 1
+            assert len(word) % 2 == 0
+            word = word[2:]
+
+        assert word[0].startswith("B") and word[1] == "x"
+        word = word[2:]  # cut off the "B x"
+
+        # count all "b x" until the end
+        while word:
+            assert word[0].startswith("b") and word[1] == "x"
+            n += 1
+            assert len(word) % 2 == 0
+            word = word[2:]
+
+        # convert numbers to binary strings, with the right string reversed
+        left = bin(m)[2:] if m > 0 else ""
+        right = bin(n)[2:] if n > 0 else ""
+        right = "".join((reversed(right)))
+        return left + "^" + right  # mark the head position with a ^
+    
+    def step(self):
+        first_symbol = self.current_word[0]
+        self.current_word = self.current_word[2:] + self.production_rules[first_symbol]
+        self.steps += 1
+        
+    def run(self):   
+        print("Initial Tape:")
+        decoded_tape = self.get_word_as_tm_tape()
+        self.machine.head_position = decoded_tape.index('^')
+        self.machine.tape = list(decoded_tape.replace('^', ''))
+        decoded_output = self.machine.decode_binarized_tape()
+        print(''.join(decoded_output).replace('_',''))
+        
+        # print(decoded_tape)
+        while self.current_word[0] != self.halting_symbol and len(self.current_word) >= 2:
+            self.step()
+
+            
+        print("Final Result:")
+        
+        decoded_tape = self.get_word_as_tm_tape()
+        # print(decoded_tape)
+        
+        self.machine.head_position = decoded_tape.index('^')
+        self.machine.tape = list(decoded_tape.replace('^', ''))
+        decoded_output = self.machine.decode_binarized_tape()
+        print(''.join(decoded_output).replace('_',''))
+        

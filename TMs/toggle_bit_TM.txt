@@ -2,9 +2,9 @@
 #symbols: 0 1
 #initial_state: q0
 #accept_states: q1
-#initial_tape: 01
+#initial_tape: 0100
 
 #transition_table:
 q0 0 q0 1 R	
 q0 1 q0 0 R	
-q0 _ q1 0 R
+q0 _ q1 0 L
