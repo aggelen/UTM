@@ -41,7 +41,9 @@ M = TMDescriptor(Q=['q0', 'q1', 'qh'],
                  q_accept='qh',
                  blank_symbol='t')
 
-T = 'B111111131t'
+T = 'B11t'
+
+# T = 'B111111131t'
 
 E = BinaryTMEncoder(M)
 M = E.encode()  #encoded machine description
