@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# %%
+
 """
 
 Created on Sun Mar 30 19:32:04 2025
@@ -42,8 +42,6 @@ M = TMDescriptor(Q=['q0', 'q1', 'qh'],
                  blank_symbol='t')
 
 T = 'B11t'
-
-# T = 'B111111131t'
 
 E = BinaryTMEncoder(M)
 M = E.encode()  #encoded machine description

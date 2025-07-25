@@ -35,7 +35,7 @@ encoded_tape = E.encode_tape(T)
 tape = E.encode_all(encoded_machine, encoded_tape)
 
 #%% UTM
-states, symbols, transitions = read_program('Programs.py/aykut_utm.txt')
+states, symbols, transitions = read_program('Programs/aykut_utm.txt')
 
 desc = TMDescriptor(Q=states, 
                     sigma=symbols, 
@@ -52,5 +52,7 @@ TM = TuringMachine(desc, tape, encoded_halting_state)
 TM.execute(500000, True)
 TM.show_tape()
 
+
+# self.tape[tape_index:].replace('Z', '0')
 final_tape = TM.read_simulated_tape(tape_index=171)
 decoded_tape = E.decode_tape(final_tape)

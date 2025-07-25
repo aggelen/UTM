@@ -14,7 +14,7 @@ import time
 import random
 import string
 from datetime import datetime
-# from tqdm import tqdm
+from tqdm import tqdm
 
 class CopyingMachine:
     def __init__(self, tape_description):
@@ -26,6 +26,7 @@ class CopyingMachine:
 #%% Turing Machine
 class TuringMachine:
     def __init__(self, descriptor, tape, encoded_halting_state=None):
+        
         self.description = descriptor
         self.tape = tape
         
@@ -52,24 +53,11 @@ class TuringMachine:
     def show_condition(self):
         print(self.read_condition())
             
-    def step(self):   
-        if 'Z' in self.tape:
-            # tape_index = 903
-            # if self.tape.index('Z') < tape_index-1:
-            #     raise SystemError
-                
-            if self.state == 'DIR_L':
-                if '00000Z' in self.tape:
-                    self.tape = self.tape[:self.tape.index('Z')] + '01' +self.tape[self.tape.index('Z'):]
-            
-            if self.state == 'DIR_R':            
-                if re.fullmatch(r"Z1+00", self.tape[self.tape.index('Z'):]):
-                    self.tape = self.tape[:self.tape.index('Z')] + self.tape[self.tape.index('Z'):].rstrip('0')+'0100'
-            
+    def step(self):          
         current_symbol = self.tape[self.head_position]
         if (self.state, current_symbol) in self.description.delta:
             new_state, write_symbol, direction = self.description.delta[(self.state, current_symbol)]
-            
+
             self.state = new_state
             self.replace_symbol(write_symbol)
 
@@ -81,54 +69,32 @@ class TuringMachine:
             # ?????
             if self.head_position < 0:
                 raise NotImplementedError()
-                # self.tape.insert(0, '0')
-                # self.head_position = 0
             elif self.head_position >= len(self.tape):
-                self.tape += '0'   # TODO:  need to be fixed
-                # print('WARN: tape augmented to right')
-                # raise NotImplementedError()
-                
+                raise NotImplementedError()
         else:
             print((self.state, current_symbol))
             raise SystemError
-        
-        ## TODO: FIXME: each step, machine controls the far right end marker: must be 00
-        # self.tape = self.tape.rstrip('0') + '00'
-        
+                
         return True
     
-    def execute(self, max_steps=100, log=False):
-        # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        # log_file = f"logs/logfile_{timestamp}.txt"
-        
-        # if log:
-        #     with open(log_file, 'a') as file:
-        #         file.write(self.read_tape())
-        #         file.write('\n')
-        
+    def execute(self, max_steps=100, log=False):        
         init_print_flag = True
         
-        for i in range(max_steps):
-            self.i = i
+        for i in tqdm(range(max_steps)):
+            self.i = i                
             
-            
-            # if self.state == 'ENDING_SHIFTY_LEFT':
-            #     if init_print_flag:
-            #         self.show_tape()
-            #         print("- - - - ")
-            #         init_print_flag = False
-                
             if self.state == 'CP_CLN':  # after copy
-                buf_len = 20
+                buf_len = 20 
                 if init_print_flag:
-                    print(f'Current Enc. State: {self.tape[1:buf_len+1].split("0")[0]}')
+                    buff = self.tape[self.tape.index('X')+1:self.tape.index('X')+buf_len]
+                    # print(f'Current Enc. State: {buff.split("0")[0]}')
                     # print(self.tape)
                     init_print_flag = False
                 
                 if self.tape[1:buf_len+1].split('0')[0] == '111111111':
                     aykut = 2
                 
-                if self.tape[1:buf_len+1].split('0')[0] == self.encoded_halting_state:
+                if buff.split('0')[0] == self.encoded_halting_state:
                     print('Halt!')
                     print(f'TM executed successfully, TotalSteps: {i}')
                     break
@@ -139,82 +105,6 @@ class TuringMachine:
             self.step()
         
         
-            # if self.state == 'INIT':
-            #     aykut = True
-            
-            #check if machine was encoded
-            # if self.encoded_halting_state is not None:
-            
-                
-                
-                # self.last_condition = self.read_condition()
-                
-                # if i%1000:
-                #     self.show_tape()
-                #     print("- - - - ")
-                # if self.state == 'CP_FND1' and self.tape[self.head_position] == 'Y'
-                # if self.state == 'INIT' and self.tape[self.head_position] == 'Y':
-                    # if log:
-                    #     with open(log_file, 'a') as file:
-                    #         file.write('INIT.....\n')
-                    #         file.write(self.read_tape())
-                    #         file.write('\n')
-                        
-                # if self.state == 'q12' and self.tape[self.head_position] == 'X':   # before match
-                #     if log:
-                #         with open(log_file, 'a') as file:
-                #             file.write('Matching starting .......\n')
-                #             file.write(self.read_tape())
-                #             file.write('\n')
-                    
-                # if log:
-                #     with open(log_file, 'a') as file:
-                #         cond = self.read_condition()
-                #         file.write(str(cond))
-                #         file.write('\n')
-                    
-                        
-            # else:
-            #     if self.state in self.description.q_accept:
-            #         print('Halt!')
-            #         print(f'TM executed successfully, TotalSteps: {i}')
-            #         break
-            #     else:
-            #         self.step()
-                    
-            #         if self.state == 'SHIFTYL_2' and self.tape[self.head_position] == '0':
-            #             if log:
-            #                 with open(log_file, 'a') as file:
-            #                     print('Step completed .......')
-            #                     file.write(self.read_tape())
-            #                     file.write('\n')
-                            
-                            
-            #         if self.state == 'q12' and self.tape[self.head_position] == 'X':   # before match
-            #             if log:
-            #                 with open(log_file, 'a') as file:
-            #                     print('Matching starting .......')
-            #                     file.write(self.read_tape())
-            #                     file.write('\n')
-                        
-            #         if log:
-            #             with open(log_file, 'a') as file:
-            #                 cond = self.read_condition()
-            #                 file.write(str(cond))
-            #                 file.write('\n')
-                        
-                # print(f'State: {self.state}')
-                
-            # if i % 500 == 0:
-            #     self.show_tape()
-            #     print(' - - - - - - ')
-                
-                
-                # ##TODO: z kopyalamadan önce bakılacak!
-                # # check if we at the right end of the tape
-                # if self.head_position == len(self.tape)-1:
-                #     self.tape += '10' #add one blank at the end 
-
 
             
 #%% Old. Abstract Turing Machine

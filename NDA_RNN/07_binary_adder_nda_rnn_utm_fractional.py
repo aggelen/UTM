@@ -1,21 +1,30 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Apr  2 12:59:02 2025
+Created on Sat Apr 26 12:54:07 2025
 
 @author: gelenag
-
-The Turing Machine
-uses the second number as a counter
-decrements the second number by one
-increments the first number by one
-till the second number becomes 0.
-
 """
 
-from Utils import TMDescriptor, BinaryTMEncoder
-from Machines import UniversalTuringMachine
+from NeuralUTM.SymbolicDynamics import TMVersatileShift
+from NeuralUTM.Encoders import GodelEncoder, MPFGodelEncoder, RationalGodelEncoder
+from NeuralUTM.Automata import TMNonlinearDynamicalAutomaton, create_transition_animation
+from NeuralUTM.NN import FastNDAtoRANN
 
+from NeuralUTM.Helpers import read_turing_machine_from_txt, BinaryTMEncoder, TMDescriptor
+
+#%%
+# import json
+
+# with open("UTM_traj.json", "r", encoding="utf-8") as f:
+#     T = json.load(f)
+    
+# T3 = T[:3000]
+    
+#%% UTM Description
+states, symbols, transitions, q_accept, blank_symbol = read_turing_machine_from_txt("TuringMachines/UTM_aykut.txt")
+
+#%% Simulated TM Description
 M = TMDescriptor(Q=['q0', 'q1',  'q2',  'q3',  'q4',  'q5', 'q6',  'q7',  'q8',  'q9', 'end'], 
                  sigma=['#', '0', '1', 'A', 'B'], 
                  gamma=['#', '0', '1', 'A', 'B'], 
@@ -63,14 +72,48 @@ T = '00000011#00001000'
 # T = '111_11'
 
 E = BinaryTMEncoder(M)
-M = E.encode()  #encoded machine description
-T = E.encode_tape(T)
+encoded_machine = E.encode()  #encoded machine description
+encoded_tape = E.encode_tape(T)
 
-U = UniversalTuringMachine(M, T, E.encoded_states[-1])  #last state: halting state
 
-# U.show_tape()
-U.execute(max_steps=1000)
-# U.show_tape()
 
-tape = U.read_tape()
-tape = E.decode_tape(tape)
+#%% Verstaile Shift
+initial_state='INIT'
+initial_tape = E.encode_all(encoded_machine, encoded_tape)
+
+initial_tape = '0'*10 + E.encode_all(encoded_machine, encoded_tape) + '0'*10
+tape_index = initial_tape.index('Z') - 1
+
+encoded_halting_state = E.encoded_halting_state()
+
+vs = TMVersatileShift(states, symbols, transitions, q_accept, blank_symbol)
+
+# print('[INFO] Encoded Initial UTM Tape: ' + initial_tape)
+# vs.simulate(initial_state, initial_tape, max_steps=20000000, utm=True, utm_encoded_halting_state=encoded_halting_state)
+
+# # print decoded tape
+# s = list(vs.s)[10:-10]
+# s.pop(s.index('CP_CLN'))
+# s.pop(s.index('.'))
+# final_tape = ''.join(list(s)[tape_index:]).replace('Z', '0')
+# decoded_tape = E.decode_tape(final_tape)
+
+#%% Gödel Encoder    
+godel_encoder = RationalGodelEncoder(states, symbols)
+
+#%% NDA
+nda = TMNonlinearDynamicalAutomaton(godel_encoder, vs)
+# nda.simulate(initial_state, initial_tape, max_steps=12000000, verbose=False, utm=True, encoded_utm_halting_state=encoded_halting_state)
+
+#%%
+# final_tape = nda.decode_tm_tape(0, 1000)
+# final_readout = final_tape[tape_index:].replace('Z', '0')
+# decoded_tape = E.decode_tape(final_readout)
+
+#%% RNN
+initial_x, initial_y = nda.initialize(initial_state, initial_tape, 10)
+
+# rnn = NDAtoRANN(nda)
+rnn = FastNDAtoRANN(nda)
+traj = rnn.simulate(initial_x, initial_y, max_steps=12000000, verbose=False,
+                    utm=True, encoded_utm_halting_state=encoded_halting_state)

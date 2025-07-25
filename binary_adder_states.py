@@ -65,10 +65,11 @@ E = BinaryTMEncoder(M)
 encoded_machine = E.encode()  #encoded machine description
 encoded_tape = E.encode_tape(T)
 
-tape = E.encode_all(encoded_machine, encoded_tape)
+tape = '0'*10 + E.encode_all(encoded_machine, encoded_tape) + '0'*10
+tape_index = tape.index('Z') - 1
 
 #%% UTM
-states, symbols, transitions = read_program('Programs.py/aykut_utm.txt')
+states, symbols, transitions = read_program('Programs/aykut_utm.txt')
 
 desc = TMDescriptor(Q=states, 
                     sigma=symbols, 
@@ -85,5 +86,5 @@ TM = TuringMachine(desc, tape, encoded_halting_state)
 TM.execute(20000000, False)
 TM.show_tape()
 
-final_tape = TM.read_simulated_tape(tape_index=903)
+final_tape = TM.read_simulated_tape(tape_index)
 decoded_tape = E.decode_tape(final_tape)

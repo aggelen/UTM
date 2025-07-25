@@ -1,39 +1,39 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Mar 30 19:36:46 2025
+Created on Fri Jul 11 20:35:06 2025
 
 @author: gelenag
 """
 
-def read_program(file_path):
-    delta = {}
-    states = set()  # Durumlar seti
-    symbols = set()  # Semboller seti
-
-    # Dosyayı açıyoruz
-    with open(file_path, 'r') as file:
-        for line in file:
-            # Satırdaki boşlukları ayırıyoruz
-            parts = line.strip().split('\t')
+def write_turing_machine_to_txt(states, symbols, transitions, q_accept, blank_symbol, filename):
+    with open(filename, 'w') as f:
+        f.write(f"states: {','.join(states)}\n")
+        f.write(f"symbols: {','.join(symbols)}\n")
+        f.write(f"accept: {q_accept}\n")
+        f.write(f"blank: {blank_symbol}\n")
+        for (state, symbol), (next_state, write_symbol, direction) in transitions.items():
+            f.write(f"({state},{symbol})->({next_state},{write_symbol},{direction})\n")
             
-            # Geçiş bilgilerini ayıklıyoruz
-            current_state = parts[0]
-            symbol = parts[1]
-            next_state = parts[2]
-            write_symbol = parts[3]
-            direction = parts[4]
             
-            delta[(current_state, symbol)] = (next_state, write_symbol, direction)
-            
-            states.add(current_state)
-            states.add(next_state)
-            symbols.add(symbol)
-            symbols.add(write_symbol)
-            
-    print(f"No States: {len(sorted(states))}")
-
-    return sorted(states), sorted(symbols), delta
+def read_turing_machine_from_txt(filename):
+    with open(filename, 'r') as f:
+        lines = f.read().splitlines()
+    
+    states = lines[0].split(":")[1].strip().split(",")
+    symbols = lines[1].split(":")[1].strip().split(",")
+    q_accept = lines[2].split(":")[1].strip()
+    blank_symbol = lines[3].split(":")[1].strip()
+    
+    transitions = {}
+    for line in lines[4:]:
+        if not line.strip(): continue
+        left, right = line.split("->")
+        state, symbol = left.strip("()").split(",")
+        next_state, write_symbol, direction = right.strip("()").split(",")
+        transitions[(state, symbol)] = (next_state, write_symbol, direction)
+    
+    return states, symbols, transitions, q_accept, blank_symbol
 
 def uniquify(input_list):
     seen = set()  
@@ -44,29 +44,6 @@ def uniquify(input_list):
             unique_list.append(item)  
             seen.add(item)  
     return unique_list
-
-class TMDescriptor:
-    def __init__(self, Q, sigma, gamma, delta, q0, q_accept, q_reject=None, blank_symbol=None, init_head_pos=0):
-        # Q: Set of states
-        # sigma: Input alphabet
-        # gamma: Tape alphabet (including blank symbol)
-        # delta: Transition function (dictionary)
-        # q0: Initial state
-        # q_accept: Accept state
-        # q_reject: Reject state
-        self.Q = uniquify(Q)
-        self.sigma = uniquify(sigma)
-        self.gamma = uniquify(gamma)
-        self.delta = delta
-        self.q0 = q0
-        self.q_accept = q_accept
-        self.q_reject = q_reject
-        self.blank_symbol = blank_symbol   
-        self.initial_head_position = init_head_pos
-        
-        #halting state must be last
-        self.Q.sort(key=lambda x: x == self.q_accept)
-        
 
 class BinaryTMEncoder:
     def __init__(self, M):
@@ -131,6 +108,8 @@ class BinaryTMEncoder:
         print('Decoding tape ...')
         decoded_tape = ''
         for t in tape.rstrip('0').split('0'):
+            if t == '':
+                continue
             t = t.replace('B', '1')
             decoded_tape += self.all_symbols[self.encoded_symbols.index(t)]
         
@@ -150,3 +129,25 @@ class BinaryTMEncoder:
         tape = 'X'+self.buffer_len*self._blank_symbol +'Y' + encoded_machine + '0'*10 + 'Z' + encoded_tape + '0'
         
         return tape
+    
+class TMDescriptor:
+    def __init__(self, Q, sigma, gamma, delta, q0, q_accept, q_reject=None, blank_symbol=None, init_head_pos=0):
+        # Q: Set of states
+        # sigma: Input alphabet
+        # gamma: Tape alphabet (including blank symbol)
+        # delta: Transition function (dictionary)
+        # q0: Initial state
+        # q_accept: Accept state
+        # q_reject: Reject state
+        self.Q = uniquify(Q)
+        self.sigma = uniquify(sigma)
+        self.gamma = uniquify(gamma)
+        self.delta = delta
+        self.q0 = q0
+        self.q_accept = q_accept
+        self.q_reject = q_reject
+        self.blank_symbol = blank_symbol   
+        self.initial_head_position = init_head_pos
+        
+        #halting state must be last
+        self.Q.sort(key=lambda x: x == self.q_accept)
